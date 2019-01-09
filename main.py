@@ -11,7 +11,7 @@ from Downlink import test_fun
 
 # ***参数配置表*** #
 # |数量定义|
-num_node = 10 # 节点数量
+num_node = 1500 # 节点数量
 num_gw = 5  # 网关数量
 
 # |随机分布类型|
@@ -125,24 +125,34 @@ if algorithm_type == '3':
         for j in range(0, num_gw, 1):
             if (load[j] >= 100): load[j] = 100
             if (ping[j] >= 5000): ping[j] = 5000
-        ping1 = ping / 400
-        load1 = load / 30
 
         #                      **** 坐标距离 -> SNR转换 ****
         snr1 = (dist * 30 / np.sqrt(2)) - 15  # 坐标距离转换为SNR,范围[-15，+15]
 
         #                       **** 计算成功率 ****
-        P_snr = 1-(0.00000001046 * pow(3.825, -snr1))
-'''
-        P_all[i] = P_snr * 1
-        P_all_list = P_all[i].tolist()  # 矩阵先转换为列表才能使用index方法返回索引值
+
+        # 根据SNR/SF计算成功率
+        P_snr = 1-(0.00000001046 * pow(3.825, -snr1))  # 带入线性回归曲线
+
+        # 根据Ping计算成功率
+        if(ping1 <= 450 ):
+            P_ping = 1
+        else:
+            P_ping = 0
+
+        # 根据Load计算成功率
+
+
+        P_all = P_snr * 1
+        P_all_list = P_all.tolist()  # 矩阵先转换为列表才能使用index方法返回索引值
         bestgw = P_all_list.index(min(P_all_list))
         color.append(color_dot[bestgw])  # 生成颜色列表
         ax1.plot(node_x[i], node_y[i], color[i])  # 绘制节点
 
+
         #                       **** 计算动态网关负载 ****
         gw_para[bestgw][0] += 0.1
-'''
+
 
 # 绘制网关
 ax1.plot(gw_x, gw_y, 'rD')
