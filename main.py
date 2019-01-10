@@ -29,6 +29,7 @@ gw_x = np.zeros((num_gw, 1))
 gw_y = np.zeros((num_gw, 1))
 node_x = np.zeros((num_node, 1))
 node_y = np.zeros((num_node, 1))
+node_SF = np.zeros((num_node, 1))
 GwList = np.zeros((num_gw, 2))
 NodeList = np.zeros((num_node, 2))
 ping = np.zeros((num_gw, 1))
@@ -111,7 +112,7 @@ if algorithm_type == '2':
         #                       **** 计算动态网关负载 ****
         gw_para[bestgw][0] += 0.1
 
-# 算法3：计算下行成功率
+# 算法3：自创算法
 if algorithm_type == '3':
     for i in range(0, num_node, 1):
         #                          **** 获取输入参数 ****
@@ -129,9 +130,13 @@ if algorithm_type == '3':
         #                      **** 坐标距离 -> SNR转换 ****
         snr1 = (dist * 30 / np.sqrt(2)) - 15  # 坐标距离转换为SNR,范围[-15，+15]
 
-        #                       **** 计算成功率 ****
+        #                       **** 分布执行算法 ****
+        # 1、通过Ping的限制筛选网关
 
-        # 根据SNR/SF计算成功率
+        # 2、筛选出信号质量优的网关，若无，跳出，直接选相对较优者下行
+
+        # 3、在信号质量优的网关中，上下行占空比相加，择小者下行
+
         P_snr = 1-(0.00000001046 * pow(3.825, -snr1))  # 带入线性回归曲线
 
         # 根据Ping计算成功率
