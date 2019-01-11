@@ -19,7 +19,10 @@ random_type = 'uniform'  # 随机类型（高斯分布or均匀分布 gaussian/un
 algorithm_type = '3'       # 多路径下行算法（1.仅信号质量 2.得分加权求和 3.）
 
 # |网关参数|
-gw_para = np.array([[1, 0], [1, 0], [1, 0], [1, 0], [1, 0]], dtype=np.float)  # 网关负载列表[上行负载%, 下行负载%]
+gw_para = np.array([[1.2, 0], [11.8, 0], [1.3, 0], [1.5, 0], [1.7, 0]], dtype=np.float)  # 网关负载列表[上行负载%, 下行负载%]
+#
+# |网关位置|
+
 
 # ******end****** #
 
@@ -39,7 +42,7 @@ P_snr = np.zeros((num_node,num_gw))
 snr_good = [0]
 snr_good = snr_good * num_gw
 color = []
-color_dot = ['y.', 'g.', 'm.', 'b.', 'c.']
+color_dot = ['y.', 'm.', 'g.', 'b.', 'c.']
 colors = ['r', 'y', 'g', 'b', 'r', 'y', 'g', 'b', 'r']
 
 # 随机生成网关和节点位置
@@ -59,15 +62,23 @@ if random_type == 'gaussian':
 
 # 均匀分布
 if random_type == 'uniform':
+
     # 生成节点列表
     NodeList = np.random.sample((num_node, 2))  # 生成x行y列的随机数组  均匀分布
     node_x = NodeList[:, 0]  # 取第一列
     node_y = NodeList[:, 1]  # 取第二列
     node_SF = np.random.randint(7, 13, size=num_node)  # 随机生成SF，范围[7,12]
+
     # 生成网关列表
-    GwList = np.random.sample((num_gw, 2))
-    gw_x = GwList[:, 0]
-    gw_y = GwList[:, 1]
+    set_GW = 0  # 1：手动配置网关位置  0：随机生成
+    if (set_GW == 1):
+        GwList
+        gw_x = [0.2, 0.8]
+        gw_y = [0.2, 0.8]
+    else:
+        GwList = np.random.sample((num_gw, 2))
+        gw_x = GwList[:, 0]
+        gw_y = GwList[:, 1]
 
 
 # 创建坐标系
@@ -93,21 +104,21 @@ if algorithm_type == '2':
         #                          **** 获取输入参数 ****
         # 信号质量
         dist = np.sqrt(np.sum(np.square(GwList-NodeList[i]), axis=1))  # 二维坐标距离计算
-        # 网络延时
+        # 下行负载
         ping = gw_para[:, 1]
-        # 网关负载
+        # 上行负载
         load = gw_para[:, 0]
         #                          **** 数据限幅、归一化 ****
         for j in range(0,num_gw,1):
-            if(load[j] >= 30): load[j] = 30
-            if(ping[j] >= 400): ping[j] = 400
+            if(load[j] >= 100): load[j] = 100
+            if(ping[j] >= 100): ping[j] = 100
         dist1 = dist/np.sqrt(2)
-        ping1 = ping/400
-        load1 = load/30
+        ping1 = ping/100
+        load1 = load/100
 
         #                           **** 加权求和 ****
         #score[i] = dist1 + ping1 + load1
-        score[i] = dist1 + ping1 +2*load1
+        score[i] = 3*dist1 + ping1 +load1
         scorelist = score[i].tolist()  # 矩阵先转换为列表才能使用index方法返回索引值
         bestgw = scorelist.index(min(scorelist))
         color.append(color_dot[bestgw])  # 生成颜色列表
@@ -116,12 +127,13 @@ if algorithm_type == '2':
         #                       **** 计算动态网关负载 ****
         gw_para[bestgw][1] += 0.1
 
-# 算法3：自创算法
+# 算法3：理想算法
 if algorithm_type == '3':
     for i in range(0, num_node, 1):
         #                          **** 获取输入参数 ****
         # 信号质量
         dist = np.sqrt(np.sum(np.square(GwList - NodeList[i]), axis=1))  # 二维坐标距离计算
+        dist = dist.tolist()
         # 上行负载
         load_up = gw_para[:, 0]
         # 下行负载
@@ -156,16 +168,18 @@ if algorithm_type == '3':
         # 若存在Ping合理 可下行的网关
         else:
             snrcnt = 0
+            #print(dist)
             for j in range(0, num_gw, 1):
-                if (dist[j] >= 0.2):
+                if (dist[j] >= 0.4):
                     snr_good[j] = 100
                     snrcnt += 1
                 else:
                     snr_good[j] = 0
-
+            #print("snr_good:",snr_good)
             # 若SNR较好 的网关 数量小于等于1
             if (snrcnt >= num_gw-1):
-                bestgw = snr1.index(min(snr1))
+                bestgw = dist.index(min(dist))
+                #print("bestgw:",bestgw)
 
             # 若存在多个SNR较好的网关,选择负载和最小者下行
             else:
@@ -206,6 +220,6 @@ plt.show()
 
 # 打印网关参数表
 print_table = PrettyTable(["网关编号", "上行负载(%)", "下行负载(%)"])  # Title
-for i in range(0, 5):
+for i in range(0, num_gw):
     print_table.add_row([i+1, gw_para[i][0], gw_para[i][1]])
 print(print_table)
